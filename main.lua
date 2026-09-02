@@ -10,6 +10,10 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local TargetParent = (gethui and gethui()) or CoreGui:FindFirstChild("RobloxGui") or LocalPlayer:WaitForChild("PlayerGui")
 
+-- جلب نظام التحكم باللاعب لتجميده وحظر حركته عند تفعيل الفريكام
+local PlayerModule = require(LocalPlayer.PlayerScripts:WaitForChild("PlayerModule"))
+local Controls = PlayerModule:GetControls()
+
 -- حذف الواجهة القديمة إذا كانت موجودة
 if TargetParent:FindFirstChild("JsoomHubGui") then
     TargetParent:FindFirstChild("JsoomHubGui"):Destroy()
@@ -19,6 +23,20 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "JsoomHubGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = TargetParent
+
+----------------------------------------------------
+-- دالة مساعدة للتحقق من عناصر السرقة (Steal Filter)
+----------------------------------------------------
+local function isStealPrompt(prompt)
+    if not (prompt and prompt:IsA("ProximityPrompt") and prompt.Enabled) then return false end
+    local action = string.lower(prompt.ActionText or "")
+    local object = string.lower(prompt.ObjectText or "")
+    local parentName = prompt.Parent and string.lower(prompt.Parent.Name) or ""
+    
+    return string.find(action, "steal") ~= nil 
+        or string.find(object, "steal") ~= nil 
+        or string.find(parentName, "steal") ~= nil
+end
 
 ----------------------------------------------------
 -- 1. شاشة التحميل (Loading Screen)
@@ -36,7 +54,7 @@ LoadingText.Name = "LoadingText"
 LoadingText.Size = UDim2.new(0.9, 0, 0.9, 0)
 LoadingText.Position = UDim2.new(0.05, 0, 0.05, 0)
 LoadingText.BackgroundTransparency = 1
-LoadingText.Text = "لو تقلي انطي مجال مره تانيه احط رجلي بطي**"
+LoadingText.Text = "تيل بكل واحد ما سوا فولو"
 LoadingText.TextColor3 = Color3.fromRGB(255, 0, 0)
 LoadingText.TextScaled = true
 LoadingText.Font = Enum.Font.SourceSansBold
@@ -53,12 +71,12 @@ SizeConstraint.Parent = LoadingText
 ----------------------------------------------------
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 320, 0, 480)
-MainFrame.Position = UDim2.new(0.5, -160, 0.4, -240)
+MainFrame.Size = UDim2.new(0, 320, 0, 525)
+MainFrame.Position = UDim2.new(0.5, -160, 0.4, -260)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Visible = false -- ستظهر بعد شاشة التحميل
+MainFrame.Visible = false
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
@@ -152,9 +170,10 @@ local TracerButton      = createButton("TracerButton", "خطوط تتبع رين
 local AntiRagdollButton = createButton("AntiRagdollButton", "منع السقوط (Anti-Ragdoll): إيقاف", Color3.fromRGB(180, 40, 40), 214)
 local AntiLagButton     = createButton("AntiLagButton", "تسريع اللعبة (Anti-Lag): إيقاف", Color3.fromRGB(180, 40, 40), 257)
 local TPStealMenuBtn    = createButton("TPStealMenuBtn", "قائمة السرقة التلقائية (TP Steal)", Color3.fromRGB(230, 120, 0), 300)
-local UnderButton       = createButton("UnderButton", "النزول تحت الأرض (Platform)", Color3.fromRGB(40, 90, 180), 343)
-local SpawnButton       = createButton("SpawnButton", "الرجوع لنقطة الرسبون", Color3.fromRGB(140, 40, 180), 386)
-local HideUIBtn         = createButton("HideUIBtn", "إخفاء القائمة", Color3.fromRGB(70, 70, 80), 429)
+local FreeCamButton     = createButton("FreeCamButton", "الكاميرا الحرّة (Free Cam): إيقاف", Color3.fromRGB(180, 40, 40), 343)
+local UnderButton       = createButton("UnderButton", "النزول تحت الأرض (Platform)", Color3.fromRGB(40, 90, 180), 386)
+local SpawnButton       = createButton("SpawnButton", "الرجوع لنقطة الرسبون", Color3.fromRGB(140, 40, 180), 429)
+local HideUIBtn         = createButton("HideUIBtn", "إخفاء القائمة", Color3.fromRGB(70, 70, 80), 472)
 
 ----------------------------------------------------
 -- 4. نافذة قائمة أشكال وأسماء اللاعبين (Player Selection Panel)
@@ -220,6 +239,79 @@ UIListLayout.Padding = UDim.new(0, 5)
 UIListLayout.Parent = ScrollFrame
 
 ----------------------------------------------------
+-- 5. واجهة أزرار التحكم بالكاميرا للهاتف (Free Cam Mobile UI)
+----------------------------------------------------
+local FreeCamMobileFrame = Instance.new("Frame")
+FreeCamMobileFrame.Name = "FreeCamMobileFrame"
+FreeCamMobileFrame.Size = UDim2.new(0, 220, 0, 170)
+FreeCamMobileFrame.Position = UDim2.new(0.75, -110, 0.55, -85)
+FreeCamMobileFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+FreeCamMobileFrame.BackgroundTransparency = 0.3
+FreeCamMobileFrame.BorderSizePixel = 0
+FreeCamMobileFrame.Visible = false
+FreeCamMobileFrame.Active = true
+FreeCamMobileFrame.Parent = ScreenGui
+
+local FCMCorner = Instance.new("UICorner")
+FCMCorner.CornerRadius = UDim.new(0, 12)
+FCMCorner.Parent = FreeCamMobileFrame
+
+local FCMStroke = Instance.new("UIStroke")
+FCMStroke.Color = Color3.fromRGB(0, 170, 255)
+FCMStroke.Thickness = 1.5
+FCMStroke.Parent = FreeCamMobileFrame
+
+local touchMove = {
+    Forward = false,
+    Backward = false,
+    Left = false,
+    Right = false,
+    Up = false,
+    Down = false
+}
+
+local function createCamTouchBtn(name, text, pos, size, stateKey)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = size or UDim2.new(0, 45, 0, 45)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    btn.BackgroundTransparency = 0.2
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 16
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Parent = FreeCamMobileFrame
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(0, 170, 255)
+    stroke.Thickness = 1
+    stroke.Parent = btn
+
+    btn.MouseButton1Down:Connect(function() touchMove[stateKey] = true end)
+    btn.MouseButton1Up:Connect(function() touchMove[stateKey] = false end)
+    btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            touchMove[stateKey] = false
+        end
+    end)
+
+    return btn
+end
+
+createCamTouchBtn("BtnForward", "▲", UDim2.new(0, 60, 0, 10), nil, "Forward")
+createCamTouchBtn("BtnBackward", "▼", UDim2.new(0, 60, 0, 110), nil, "Backward")
+createCamTouchBtn("BtnLeft", "◄", UDim2.new(0, 10, 0, 60), nil, "Left")
+createCamTouchBtn("BtnRight", "►", UDim2.new(0, 110, 0, 60), nil, "Right")
+
+createCamTouchBtn("BtnUp", "أعلى", UDim2.new(0, 165, 0, 20), UDim2.new(0, 48, 0, 55), "Up")
+createCamTouchBtn("BtnDown", "أسفل", UDim2.new(0, 165, 0, 90), UDim2.new(0, 48, 0, 55), "Down")
+
+----------------------------------------------------
 -- نظام التحريك بالسحب (Drag System)
 ----------------------------------------------------
 local function makeDraggable(frame)
@@ -255,6 +347,7 @@ end
 makeDraggable(MainFrame)
 makeDraggable(FloatingToggle)
 makeDraggable(PlayerListFrame)
+makeDraggable(FreeCamMobileFrame)
 
 ----------------------------------------------------
 -- منطق الإخفاء والإظهار
@@ -347,18 +440,13 @@ task.spawn(function()
         task.wait(0.05)
         if isSpamming then
             for _, prompt in ipairs(Workspace:GetDescendants()) do
-                if prompt:IsA("ProximityPrompt") and prompt.Enabled then
-                    local action = prompt.ActionText or ""
-                    local object = prompt.ObjectText or ""
-                    
-                    if string.find(string.lower(action), "steal") or string.find(string.lower(object), "steal") then
-                        if fireproximityprompt then
-                            fireproximityprompt(prompt)
-                        else
-                            prompt.HoldDuration = 0
-                            prompt:InputHoldBegin()
-                            prompt:InputHoldEnd()
-                        end
+                if isStealPrompt(prompt) then
+                    if fireproximityprompt then
+                        fireproximityprompt(prompt)
+                    else
+                        prompt.HoldDuration = 0
+                        prompt:InputHoldBegin()
+                        prompt:InputHoldEnd()
                     end
                 end
             end
@@ -682,7 +770,7 @@ Workspace.DescendantAdded:Connect(function(v)
 end)
 
 ----------------------------------------------------
--- 7. منطق قائمة أسماء اللاعبين والسرقة اللحظية (TP Steal Logic)
+-- 7. منطق قائمة أسماء اللاعبين والسرقة اللحظية (TP Steal Logic - Steal Only)
 ----------------------------------------------------
 local function performTPSteal(targetPlayer)
     local myChar = LocalPlayer.Character
@@ -692,16 +780,13 @@ local function performTPSteal(targetPlayer)
         local myHRP = myChar.HumanoidRootPart
         local targetHRP = targetChar.HumanoidRootPart
         
-        -- حفظ الموقع الأصلي للاعب
         local originalCFrame = myHRP.CFrame
         
-        -- الانتقال اللحظي بجانب اللاعب المستهدف
         myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 2)
         task.wait(0.05)
         
-        -- التفاعل مع كافة أزرار السرقة
         for _, prompt in ipairs(Workspace:GetDescendants()) do
-            if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+            if isStealPrompt(prompt) then
                 if fireproximityprompt then
                     fireproximityprompt(prompt)
                 else
@@ -713,7 +798,6 @@ local function performTPSteal(targetPlayer)
         end
         
         task.wait(0.1)
-        -- العودة اللحظية للموقع الأصلي
         myHRP.CFrame = originalCFrame
     end
 end
@@ -773,7 +857,99 @@ Players.PlayerRemoving:Connect(function(plr)
 end)
 
 ----------------------------------------------------
--- 8. منطق الانتقالات (تحت الأرض والـ Spawn)
+-- 8. منطق الكاميرا الحرّة (Free Cam مع تجميد اللاعب ودعم الجوال والكمبيوتر)
+----------------------------------------------------
+local isFreeCamEnabled = false
+local freeCamConnection = nil
+local camSpeed = 1.0
+local lookSensitivity = 0.25
+
+local cameraYaw = 0
+local cameraPitch = 0
+
+-- استجابة السحب/التدوير للماوس أو لمس شاشة الهاتف
+UserInputService.InputChanged:Connect(function(input)
+    if not isFreeCamEnabled then return end
+    
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Delta
+        cameraYaw = cameraYaw - (delta.X * lookSensitivity)
+        cameraPitch = math.clamp(cameraPitch - (delta.Y * lookSensitivity), -80, 80)
+    end
+end)
+
+FreeCamButton.MouseButton1Click:Connect(function()
+    isFreeCamEnabled = not isFreeCamEnabled
+    if isFreeCamEnabled then
+        FreeCamButton.BackgroundColor3 = Color3.fromRGB(40, 180, 70)
+        FreeCamButton.Text = "الكاميرا الحرّة (Free Cam): تشغيل"
+        
+        -- 1. تجميد حركة اللاعب نهائياً
+        Controls:Disable()
+        
+        -- 2. إظهار أزرار الحركة للهاتف إذا كان جهاز لمس
+        if UserInputService.TouchEnabled then
+            FreeCamMobileFrame.Visible = true
+        else
+            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+        end
+        
+        Camera.CameraType = Enum.CameraType.Scriptable
+        
+        -- حفظ زوايا اتجاه الكاميرا الحالية
+        local rx, ry, _ = Camera.CFrame:ToOrientation()
+        cameraPitch = math.deg(rx)
+        cameraYaw = math.deg(ry)
+        
+        -- حلقة تحريك الكاميرا بـ WASD والأزرار
+        freeCamConnection = RunService.RenderStepped:Connect(function()
+            if not isFreeCamEnabled then return end
+            
+            local rotationCFrame = CFrame.Angles(0, math.rad(cameraYaw), 0) * CFrame.Angles(math.rad(cameraPitch), 0, 0)
+            local moveVector = Vector3.zero
+            
+            -- كيبورد + أزرار اللمس/الهاتف
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) or touchMove.Forward then moveVector += Vector3.new(0, 0, -1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) or touchMove.Backward then moveVector += Vector3.new(0, 0, 1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) or touchMove.Left then moveVector += Vector3.new(-1, 0, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) or touchMove.Right then moveVector += Vector3.new(1, 0, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.E) or touchMove.Up then moveVector += Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Q) or touchMove.Down then moveVector += Vector3.new(0, -1, 0) end
+            
+            if moveVector.Magnitude > 0 then
+                moveVector = moveVector.Unit * camSpeed
+            end
+            
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position) * rotationCFrame * CFrame.new(moveVector)
+        end)
+    else
+        FreeCamButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+        FreeCamButton.Text = "الكاميرا الحرّة (Free Cam): إيقاف"
+        
+        -- 1. إرجاع حركة اللاعب
+        Controls:Enable()
+        
+        FreeCamMobileFrame.Visible = false
+        for k in pairs(touchMove) do touchMove[k] = false end
+        
+        if freeCamConnection then
+            freeCamConnection:Disconnect()
+            freeCamConnection = nil
+        end
+        
+        Camera.CameraType = Enum.CameraType.Custom
+        if not UserInputService.TouchEnabled then
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        end
+        
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        end
+    end
+end)
+
+----------------------------------------------------
+-- 9. منطق الانتقالات (تحت الأرض والـ Spawn)
 ----------------------------------------------------
 local safePlatform
 
