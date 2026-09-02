@@ -36,7 +36,7 @@ LoadingText.Name = "LoadingText"
 LoadingText.Size = UDim2.new(0.9, 0, 0.9, 0)
 LoadingText.Position = UDim2.new(0.05, 0, 0.05, 0)
 LoadingText.BackgroundTransparency = 1
-LoadingText.Text = "لا تقلي انطي مجال مرا تانيه لأحط رجلي بطي**"
+LoadingText.Text = "تيل بكل واحد ما سوا فولو"
 LoadingText.TextColor3 = Color3.fromRGB(255, 0, 0)
 LoadingText.TextScaled = true
 LoadingText.Font = Enum.Font.SourceSansBold
@@ -53,8 +53,8 @@ SizeConstraint.Parent = LoadingText
 ----------------------------------------------------
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 320, 0, 437)
-MainFrame.Position = UDim2.new(0.5, -160, 0.4, -218)
+MainFrame.Size = UDim2.new(0, 320, 0, 480)
+MainFrame.Position = UDim2.new(0.5, -160, 0.4, -240)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -99,7 +99,7 @@ MiniCorner.CornerRadius = UDim.new(0, 6)
 MiniCorner.Parent = HideMiniButton
 
 ----------------------------------------------------
--- 3. زر الـ Toggle العائم (JASIME HUB) باللون الأسود
+-- 3. زر الـ Toggle العائم (JASIME HUB)
 ----------------------------------------------------
 local FloatingToggle = Instance.new("TextButton")
 FloatingToggle.Name = "FloatingToggle"
@@ -151,9 +151,73 @@ local ESPButton         = createButton("ESPButton", "كشف هيكل اللاع�
 local TracerButton      = createButton("TracerButton", "خطوط تتبع رينبو: إيقاف", Color3.fromRGB(180, 40, 40), 171)
 local AntiRagdollButton = createButton("AntiRagdollButton", "منع السقوط (Anti-Ragdoll): إيقاف", Color3.fromRGB(180, 40, 40), 214)
 local AntiLagButton     = createButton("AntiLagButton", "تسريع اللعبة (Anti-Lag): إيقاف", Color3.fromRGB(180, 40, 40), 257)
-local UnderButton       = createButton("UnderButton", "النزول تحت الأرض (Platform)", Color3.fromRGB(40, 90, 180), 300)
-local SpawnButton       = createButton("SpawnButton", "الرجوع لنقطة الرسبون", Color3.fromRGB(140, 40, 180), 343)
-local HideUIBtn         = createButton("HideUIBtn", "إخفاء القائمة", Color3.fromRGB(70, 70, 80), 386)
+local TPStealMenuBtn    = createButton("TPStealMenuBtn", "قائمة السرقة التلقائية (TP Steal)", Color3.fromRGB(230, 120, 0), 300)
+local UnderButton       = createButton("UnderButton", "النزول تحت الأرض (Platform)", Color3.fromRGB(40, 90, 180), 343)
+local SpawnButton       = createButton("SpawnButton", "الرجوع لنقطة الرسبون", Color3.fromRGB(140, 40, 180), 386)
+local HideUIBtn         = createButton("HideUIBtn", "إخفاء القائمة", Color3.fromRGB(70, 70, 80), 429)
+
+----------------------------------------------------
+-- 4. نافذة قائمة أشكال وأسماء اللاعبين (Player Selection Panel)
+----------------------------------------------------
+local PlayerListFrame = Instance.new("Frame")
+PlayerListFrame.Name = "PlayerListFrame"
+PlayerListFrame.Size = UDim2.new(0, 260, 0, 320)
+PlayerListFrame.Position = UDim2.new(0.5, 170, 0.4, -160)
+PlayerListFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+PlayerListFrame.BorderSizePixel = 0
+PlayerListFrame.Visible = false
+PlayerListFrame.Active = true
+PlayerListFrame.Parent = ScreenGui
+
+local PLCorner = Instance.new("UICorner")
+PLCorner.CornerRadius = UDim.new(0, 10)
+PLCorner.Parent = PlayerListFrame
+
+local PLStroke = Instance.new("UIStroke")
+PLStroke.Color = Color3.fromRGB(230, 120, 0)
+PLStroke.Thickness = 2
+PLStroke.Parent = PlayerListFrame
+
+local PLTitle = Instance.new("TextLabel")
+PLTitle.Name = "PLTitle"
+PLTitle.Size = UDim2.new(1, -30, 0, 35)
+PLTitle.Position = UDim2.new(0, 10, 0, 0)
+PLTitle.BackgroundTransparency = 1
+PLTitle.Text = "اختر لاعباً لسرقته لحظياً:"
+PLTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+PLTitle.TextSize = 13
+PLTitle.Font = Enum.Font.SourceSansBold
+PLTitle.TextXAlignment = Enum.TextXAlignment.Left
+PLTitle.Parent = PlayerListFrame
+
+local PLCloseBtn = Instance.new("TextButton")
+PLCloseBtn.Name = "PLCloseBtn"
+PLCloseBtn.Size = UDim2.new(0, 24, 0, 24)
+PLCloseBtn.Position = UDim2.new(1, -28, 0, 6)
+PLCloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+PLCloseBtn.Text = "X"
+PLCloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+PLCloseBtn.TextSize = 12
+PLCloseBtn.Font = Enum.Font.SourceSansBold
+PLCloseBtn.Parent = PlayerListFrame
+
+local PLCloseCorner = Instance.new("UICorner")
+PLCloseCorner.CornerRadius = UDim.new(0, 6)
+PLCloseCorner.Parent = PLCloseBtn
+
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Name = "ScrollFrame"
+ScrollFrame.Size = UDim2.new(0.92, 0, 0.82, 0)
+ScrollFrame.Position = UDim2.new(0.04, 0, 0.14, 0)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.ScrollBarThickness = 5
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollFrame.Parent = PlayerListFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 5)
+UIListLayout.Parent = ScrollFrame
 
 ----------------------------------------------------
 -- نظام التحريك بالسحب (Drag System)
@@ -190,12 +254,14 @@ end
 
 makeDraggable(MainFrame)
 makeDraggable(FloatingToggle)
+makeDraggable(PlayerListFrame)
 
 ----------------------------------------------------
 -- منطق الإخفاء والإظهار
 ----------------------------------------------------
 local function hideMainUI()
     MainFrame.Visible = false
+    PlayerListFrame.Visible = false
     FloatingToggle.Visible = true
 end
 
@@ -207,9 +273,10 @@ end
 HideMiniButton.MouseButton1Click:Connect(hideMainUI)
 HideUIBtn.MouseButton1Click:Connect(hideMainUI)
 FloatingToggle.MouseButton1Click:Connect(showMainUI)
+PLCloseBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = false end)
 
 ----------------------------------------------------
--- 1. منطق جعل الضغط بدون انتظار (Instant Hold)
+-- 1. منطق الضغط السريع بدون انتظار (Instant Hold)
 ----------------------------------------------------
 local isEnabled = false
 local originalDurations = {}
@@ -493,16 +560,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-Players.PlayerAdded:Connect(function(plr)
-    if isESPEnabled then createESP(plr) end
-    if isTracersEnabled then createTracer(plr) end
-end)
-
-Players.PlayerRemoving:Connect(function(plr)
-    removeESP(plr)
-    removeTracer(plr)
-end)
-
 ----------------------------------------------------
 -- 5. منطق منع السقوط والتخدير (Anti-Ragdoll)
 ----------------------------------------------------
@@ -575,7 +632,7 @@ LocalPlayer.CharacterAdded:Connect(function(char)
 end)
 
 ----------------------------------------------------
--- 6. منطق تسريع اللعبة وتقليل اللاج (Anti-Lag / FPS Boost)
+-- 6. منطق تسريع اللعبة وتقليل اللاج (Anti-Lag)
 ----------------------------------------------------
 local isAntiLagEnabled = false
 
@@ -625,7 +682,98 @@ Workspace.DescendantAdded:Connect(function(v)
 end)
 
 ----------------------------------------------------
--- 7. منطق الانتقالات (تحت الأرض والـ Spawn)
+-- 7. منطق قائمة أسماء اللاعبين والسرقة اللحظية (TP Steal Logic)
+----------------------------------------------------
+local function performTPSteal(targetPlayer)
+    local myChar = LocalPlayer.Character
+    local targetChar = targetPlayer.Character
+    
+    if myChar and myChar:FindFirstChild("HumanoidRootPart") and targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+        local myHRP = myChar.HumanoidRootPart
+        local targetHRP = targetChar.HumanoidRootPart
+        
+        -- حفظ الموقع الأصلي للاعب
+        local originalCFrame = myHRP.CFrame
+        
+        -- الانتقال اللحظي بجانب اللاعب المستهدف
+        myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 2)
+        task.wait(0.05)
+        
+        -- التفاعل مع كافة أزرار السرقة
+        for _, prompt in ipairs(Workspace:GetDescendants()) do
+            if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+                if fireproximityprompt then
+                    fireproximityprompt(prompt)
+                else
+                    prompt.HoldDuration = 0
+                    prompt:InputHoldBegin()
+                    prompt:InputHoldEnd()
+                end
+            end
+        end
+        
+        task.wait(0.1)
+        -- العودة اللحظية للموقع الأصلي
+        myHRP.CFrame = originalCFrame
+    end
+end
+
+local function refreshPlayerList()
+    for _, child in ipairs(ScrollFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    local count = 0
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            count = count + 1
+            local pBtn = Instance.new("TextButton")
+            pBtn.Name = plr.Name
+            pBtn.Size = UDim2.new(1, -10, 0, 36)
+            pBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+            pBtn.Text = plr.DisplayName .. " (@" .. plr.Name .. ")"
+            pBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            pBtn.TextSize = 12
+            pBtn.Font = Enum.Font.SourceSansBold
+            pBtn.TextTruncate = Enum.TextTruncate.AtEnd
+            pBtn.Parent = ScrollFrame
+            
+            local pCorner = Instance.new("UICorner")
+            pCorner.CornerRadius = UDim.new(0, 6)
+            pCorner.Parent = pBtn
+            
+            pBtn.MouseButton1Click:Connect(function()
+                performTPSteal(plr)
+            end)
+        end
+    end
+    
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, count * 41)
+end
+
+TPStealMenuBtn.MouseButton1Click:Connect(function()
+    PlayerListFrame.Visible = not PlayerListFrame.Visible
+    if PlayerListFrame.Visible then
+        refreshPlayerList()
+    end
+end)
+
+Players.PlayerAdded:Connect(function(plr)
+    if isESPEnabled then createESP(plr) end
+    if isTracersEnabled then createTracer(plr) end
+    if PlayerListFrame.Visible then refreshPlayerList() end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    removeESP(plr)
+    removeTracer(plr)
+    if PlayerListFrame.Visible then refreshPlayerList() end
+end)
+
+----------------------------------------------------
+-- 8. منطق الانتقالات (تحت الأرض والـ Spawn)
 ----------------------------------------------------
 local safePlatform
 
