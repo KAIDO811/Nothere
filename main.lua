@@ -551,4 +551,124 @@ AntiRagdollButton.MouseButton1Click:Connect(function()
     if isAntiRagdollEnabled then
         AntiRagdollButton.BackgroundColor3 = Color3.fromRGB(40, 180, 70)
         AntiRagdollButton.Text = "منع السقوط (Anti-Ragdoll): تشغيل"
-       
+        if LocalPlayer.Character then
+            applyAntiRagdoll(LocalPlayer.Character)
+        end
+    else
+        AntiRagdollButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+        AntiRagdollButton.Text = "منع السقوط (Anti-Ragdoll): إيقاف"
+        if LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+                humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+            end
+        end
+    end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    if isAntiRagdollEnabled then
+        task.wait(0.1)
+        applyAntiRagdoll(char)
+    end
+end)
+
+----------------------------------------------------
+-- 6. منطق تسريع اللعبة وتقليل اللاج (Anti-Lag / FPS Boost)
+----------------------------------------------------
+local isAntiLagEnabled = false
+
+local function applyAntiLagToObject(v)
+    if v:IsA("BasePart") and not v:IsA("MeshPart") then
+        v.Material = Enum.Material.SmoothPlastic
+        v.CastShadow = false
+    elseif v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Trail") or v:IsA("Beam") then
+        v.Enabled = false
+    elseif v:IsA("Explosion") then
+        v.Visible = false
+    end
+end
+
+local function enableAntiLag()
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
+            v.Enabled = false
+        end
+    end
+    
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        applyAntiLagToObject(v)
+    end
+end
+
+AntiLagButton.MouseButton1Click:Connect(function()
+    isAntiLagEnabled = not isAntiLagEnabled
+    if isAntiLagEnabled then
+        AntiLagButton.BackgroundColor3 = Color3.fromRGB(40, 180, 70)
+        AntiLagButton.Text = "تسريع اللعبة (Anti-Lag): تشغيل"
+        enableAntiLag()
+    else
+        AntiLagButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+        AntiLagButton.Text = "تسريع اللعبة (Anti-Lag): إيقاف"
+    end
+end)
+
+Workspace.DescendantAdded:Connect(function(v)
+    if isAntiLagEnabled then
+        task.wait(0.01)
+        applyAntiLagToObject(v)
+    end
+end)
+
+----------------------------------------------------
+-- 7. منطق الانتقالات (تحت الأرض والـ Spawn)
+----------------------------------------------------
+local safePlatform
+
+UnderButton.MouseButton1Click:Connect(function()
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local hrp = character.HumanoidRootPart
+        
+        if not safePlatform or not safePlatform.Parent then
+            safePlatform = Instance.new("Part")
+            safePlatform.Name = "JsoomSafePlatform"
+            safePlatform.Size = Vector3.new(20, 3, 20)
+            safePlatform.Position = Vector3.new(hrp.Position.X, hrp.Position.Y - 80, hrp.Position.Z)
+            safePlatform.Anchored = true
+            safePlatform.CanCollide = true
+            safePlatform.Material = Enum.Material.SmoothPlastic
+            safePlatform.Color = Color3.fromRGB(0, 170, 255)
+            safePlatform.Parent = Workspace
+        end
+        
+        hrp.CFrame = safePlatform.CFrame * CFrame.new(0, 4, 0)
+    end
+end)
+
+SpawnButton.MouseButton1Click:Connect(function()
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local hrp = character.HumanoidRootPart
+        
+        local spawnLoc = Workspace:FindFirstChildOfClass("SpawnLocation")
+        if spawnLoc then
+            hrp.CFrame = spawnLoc.CFrame * CFrame.new(0, 4, 0)
+        else
+            hrp.CFrame = CFrame.new(0, 50, 0)
+        end
+    end
+end)
+
+----------------------------------------------------
+-- تشغيل المؤقت لمدة 3 ثواني لشاشة التحميل
+----------------------------------------------------
+task.spawn(function()
+    task.wait(3)
+    LoadingFrame:Destroy()
+    MainFrame.Visible = true
+end)
